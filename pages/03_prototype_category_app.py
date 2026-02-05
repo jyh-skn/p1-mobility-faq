@@ -5,8 +5,6 @@ import pandas as pd
 import math
 import numpy as np
 
-from findloc import find_address_and_point
-from calculate_distance import calculate_distance
 
 ITEMS_PER_PAGE = 4
 
