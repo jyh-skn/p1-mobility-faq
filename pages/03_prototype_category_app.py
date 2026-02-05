@@ -10,7 +10,7 @@ from folium.plugins import MarkerCluster
 ITEMS_PER_PAGE = 4
 
 # csv 파일 읽어옴
-df = pd.read_csv('../KC_490_WNTY_PRKLT_2024.csv')
+df = pd.read_csv('KC_490_WNTY_PRKLT_2024.csv')
 
 if "current_page" not in st.session_state: #현재 검색중인 페이지
     st.session_state.current_page = 1
