@@ -157,7 +157,6 @@ with right_col:
     # 검색 중심점 마커 (내 위치 느낌)
     folium.Marker(
         location=st.session_state['map_center'],
-        popup="검색 위치",
         icon=folium.Icon(color='red', icon='star')
     ).add_to(m)
 
@@ -179,9 +178,9 @@ with right_col:
             <div style="width:220px; font-family: 'Nanum Gothic', sans-serif; line-height:1.5;">
                 <h4 style="margin:0 0 5px 0; color:#333;">{s['OS_NM']}</h4>
                 <div style="font-size:13px; color:#666; margin-bottom:10px;">
-                    <b>가격:</b> <span style="color:#ff4b4b; font-weight:bold;">{int(s['PRICE']):,}원</span><br>
-                    <b>브랜드:</b> {s['brand_nm']}<br>
-                    <b>거리:</b> {s['DISTANCE']}m
+                    <b>💰 가격:</b> <span style="color:#ff4b4b; font-weight:bold;">{int(s['PRICE']):,}원</span><br>
+                    <b>™️ 브랜드:</b> {s['brand_nm']}<br>
+                    <b>📏 거리:</b> {s['DISTANCE']}m
                 </div>
                 <a href="{kakao_dir_url}" target="_blank" 
                    style="display:block; text-align:center; padding:8px; background-color:#FAE100; color:#3C1E1E; text-decoration:none; border-radius:5px; font-size:13px; font-weight:bold;">
@@ -193,8 +192,7 @@ with right_col:
         folium.Marker(
             location=[s['lat'], s['lng']],
             popup=folium.Popup(popup_html, max_width=300),
-            tooltip=f"{s['OS_NM']} ({s['PRICE']}원)",
             icon=folium.Icon(color='blue', icon='oil-can', prefix='fa')
         ).add_to(cluster)
 
-    st_folium(m, width="100%", height=600, key="oil_map")
+    st_folium(m, width="100%", height=600, key="oil_map", returned_objects=[])

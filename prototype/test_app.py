@@ -9,13 +9,12 @@ import math
 import warnings
 from geopy.geocoders import Nominatim
 from dotenv import load_dotenv
-from folium.plugins import MarkerCluster
 
 # --- 0. 불필요한 경고 및 출력 억제 ---
 warnings.filterwarnings('ignore', category=UserWarning)
 
 # 1. 환경 설정 로드
-load_dotenv()
+load_dotenv('env')
 geolocator = Nominatim(user_agent="parking_mate")
 
 db_config_raw = os.getenv("DB_CONFIG")
@@ -56,28 +55,22 @@ st.set_page_config(layout="wide", page_title="Parking Mate")
 # ⭐ [통합 CSS] 버튼 겹침 방지 및 글자 깨짐 해결
 st.markdown("""
     <style>
-    /* 1. 컨테이너 전체의 기본 여백을 제거하여 시작 지점을 통일 */
-    [data-testid="stVerticalBlock"] {
-        gap: 0rem !important;
+    /* 버튼 내부 글자 줄바꿈 방지 */
+    div.stButton > button p {
+        white-space: nowrap !important;
+        font-size: 14px !important;
     }
-
-    /* 2. 왼쪽 헤더 전용 컨테이너: 검색창 높이(약 60px)와 맞추기 */
-    .left-header-box {
-        height: 60px;          /* 우측 검색창(st.form)과 비슷한 높이 */
-        display: flex;
-        align-items: center;   /* 세로 중앙 정렬 */
-        padding-left: 5px;
-        margin-bottom: 10px;   /* 아래 요소와의 간격 */
+    /* 버튼 간격 및 최소 너비 최적화 */
+    div.stButton > button {
+        min-width: 35px !important; 
+        width: 100% !important;
+        padding: 0px !important;
+        margin: 0px 2px !important; 
     }
-
-    /* 3. 구분선(hr) 마진 최적화: 겹치지 않게 최소한의 공간 확보 */
-    hr {
-        margin: 0.5rem 0 1rem 0 !important;
-    }
-
-    /* 4. 라디오 버튼 위치 조정 */
-    div.stRadio > div {
-        margin-top: -10px !important;
+    /* 컬럼 간격 미세 조정 */
+    [data-testid="column"] {
+        padding-left: 1px !important;
+        padding-right: 1px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -109,15 +102,8 @@ df = st.session_state['results']
 
 # --- 왼쪽 영역: 검색 결과 리스트 & 개선된 페이지네이션 ---
 with left_col:
-    # [수정] HTML을 사용하여 우측 검색창과 높이를 나란히 맞춤
-    st.markdown(f"""
-            <div class="left-header-box">
-                <h3 style="margin: 0; font-size: 1.6rem; color: #31333F;">
-                    🔍 검색 결과 ({len(st.session_state['results'])}건)
-                </h3>
-            </div>
-        """, unsafe_allow_html=True)
-    st.radio("정렬", ["가까운순 ▼", "가격순 ▼", "공영"], horizontal=True, label_visibility="collapsed")
+    st.subheader(f"🔍 검색 결과 ({len(df)}건)")
+    st.radio("정렬", ["가까운순 ▼", "가격순 ▼", "공영"], horizontal=True)
     st.write("---")
 
     if not df.empty:
@@ -209,7 +195,6 @@ with right_col:
 
     center_lat, center_lng = (df.iloc[0]['lat'], df.iloc[0]['lng']) if not df.empty else (37.5665, 126.9780)
     m = folium.Map(location=[center_lat, center_lng], zoom_start=14 if not df.empty else 12)
-    cluster = MarkerCluster().add_to(m)
 
     for i, row in df.iterrows():
         is_fav = row['name'] in st.session_state.favorites
