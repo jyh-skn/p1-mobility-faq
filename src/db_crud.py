@@ -89,8 +89,11 @@ def run_bulk_insert_query(query, params=None):
     # 연결이 끊겼는지 확인하고 필요시 재연결
     if not conn.is_connected():
         conn.reconnect()
+    else:
+        # 기존 연결의 잔여 결과물을 강제로 비우기 (안전장치)
+        conn.consume_results()
 
-    cursor = conn.cursor(dictionary=True)  # 결과를 딕셔너리 형태(k-v)로 반환
+    cursor = conn.cursor(dictionary=True, buffered=True)  # 결과를 딕셔너리 형태(k-v)로 반환
     try:
         # 대량 데이터 execute
         cursor.executemany(query, params or ())
