@@ -195,4 +195,4 @@ with right_col:
             icon=folium.Icon(color='blue', icon='oil-can', prefix='fa')
         ).add_to(cluster)
 
-    st_folium(m, width="100%", height=600, key="oil_map")
+    st_folium(m, width="100%", height=600, key="oil_map", returned_objects=[])
