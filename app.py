@@ -5,7 +5,7 @@ import streamlit as st
 entry_p = st.Page("pages/01_entry_page.py", title="홈", icon="🏠", default=True)
 nearby_parking_p = st.Page("pages/02_nearby_parkinglots.py", title="Parking Mate", icon="🅿️")
 parking_by_region_p = st.Page("pages/03_prototype_category_app.py", title="Parking Lot by region", icon="🅿️")
-search_gas_station_p =  st.Page("pages/04_search_gas_station.py", title="Gas Station Mate", icon="⛽")
+search_gas_station_p =  st.Page("pages/04_search_gas_station.py", title="Oil Mate", icon="⛽")
 search_parking_gas_p = st.Page("pages/05_search_parking_gas.py", title="Parking and Oil Mate", icon="🔍")
 
 # 내비게이션 실행
@@ -51,20 +51,8 @@ if st.session_state.prev_page != pg.title:
                 padding-left: 1px !important;
                 padding-right: 1px !important;
             }
-            
-            /* 2. 지도를 감싸는 가장 바깥쪽 리테이너 타겟팅 */
-            [data-testid="stVerticalBlock"] > div:has(iframe) {
-                margin-top: -2px !important; /
-            }
-            
-            /* 3. 지도 자체 프레임 조절 */
-            iframe {
-                border-radius: 15px !important;
-                border: 1px solid #ddd !important;
-                margin-top: -5px !important; /* 내부에서 한 번 더 올림 */
-            }
-            
-            /* 4. st_folium 컨테이너 내부 여백 제거 */
+        
+            /* st_folium 컨테이너 내부 여백 제거 */
             .element-container:has(iframe) {
                 margin-bottom: -10px !important;
             }

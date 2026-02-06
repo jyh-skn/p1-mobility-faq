@@ -9,7 +9,7 @@ from src.utils import get_oil_stations, find_address_and_point
 ITEMS_PER_PAGE = 4
 
 # 2. 페이지 설정
-st.set_page_config(layout="wide", page_title="Gas Station Mate")
+st.set_page_config(layout="wide", page_title="Oil Mate")
 #
 # 세션 상태 초기화
 if 'oil_results' not in st.session_state:
@@ -25,7 +25,7 @@ if "current_page" not in st.session_state: #리스트에서 현재 탐색중인 
 
 stations = st.session_state['oil_results']
 # 4. 상단 로고 (검색바는 아래 right_col로 이동)
-st.title("⛽ Gas Station Mate")
+st.title("⛽ Oil Mate")
 st.write("---")
 st.subheader(f"🔍 검색 결과 ({len(stations)}건)")
 # 5. 메인 레이아웃 분할: 왼쪽(리스트) | 오른쪽(검색창 + 지도)
@@ -67,30 +67,6 @@ with left_col:
                     <p style="margin:0; font-size:13px; color:#666;">📏 거리: {s.distance}m</p>
                 </div>
                 """, unsafe_allow_html=True)
-        col_prev, col_page, col_next = st.columns([1, 2, 1])
-        with col_prev:
-            is_first = st.session_state.current_page == 1
-            if st.button("⬅️ 이전", use_container_width=True, disabled=is_first):
-                st.session_state.current_page -= 1
-                st.rerun()
-
-        with col_page:
-            st.markdown(
-                f"""
-                            <div style="text-align: center; background-color: #f0f2f6; border-radius: 8px; padding: 4px;">
-                                <span style="font-size: 0.9rem; color: #555;">Page</span><br>
-                                <strong style="font-size: 1.2rem; color: #007BFF;">{st.session_state.current_page}</strong> 
-                                <span style="color: #999;">/ {total_pages}</span>
-                            </div>
-                            """,
-                unsafe_allow_html=True
-            )
-
-        with col_next:
-            is_last = st.session_state.current_page == total_pages
-            if st.button("다음 ➡️", use_container_width=True, disabled=is_last):
-                st.session_state.current_page += 1
-                st.rerun()
 
         st.write("---")
         page_cols = st.columns([1.1, 1, 1, 1, 1, 1, 1.5])
