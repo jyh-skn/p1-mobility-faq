@@ -14,6 +14,7 @@ from src.db_crud import run_query
 from folium.plugins import MarkerCluster
 
 from src.db_crud import get_sido_sigungu
+from src.db_crud import get_region_parking_data
 
 # --- 0. 불필요한 경고 및 출력 억제 ---
 # Pandas의 SQLAlchemy 관련 UserWarning을 무시합니다.
@@ -56,21 +57,8 @@ st.write("---")
 # 1. 입력부: 검색바와 버튼
 # 검색창과 버튼을 나란히 배치하기 위해 컬럼 사용
 col1, col2, col3 = st.columns([0.45, 0.45, 0.1])
-@st.cache_data
-def load_all_data():
-    return pd.DataFrame(run_query('''
-        SELECT name, \
-               lat, \
-               lng, \
-               sido, \
-               sigungu,\
-               full_address, \
-               space_no
-          FROM parking_lot
-         WHERE name like '%주차장%'
-    '''))
-df = load_all_data()
-#print(df)
+df = get_region_parking_data()
+
 
 with col1:
     st.session_state.sido_name = col1.selectbox(

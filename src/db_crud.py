@@ -1,22 +1,18 @@
-from dotenv import load_dotenv
 import mysql.connector
+import pandas as pd
 import streamlit as st
-import os
-import json
 
 from src.model import ParkingLot
 from src.model import Destination
 
 from src.utils import get_mbr_polygon
 
-load_dotenv()
-
-DB_CONFIG = json.loads(os.getenv('DB_CONFIG', '{}'))
+from src.config import config_db
 
 @st.cache_resource
 def get_connection():
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = mysql.connector.connect(**config_db)
         return conn
     except mysql.connector.Error as err:
         st.error(f"Error: {err}")
@@ -34,8 +30,8 @@ def get_near_parking_data(_dest: Destination):
         min_lat, max_lat = _dest.lat - delta, _dest.lat + delta
         min_lng, max_lng = _dest.lng - delta, _dest.lng + delta
 
-        sql = '''SELECT id, reg_id, name, lat, lng, sido, sigungu, full_address, space_no, ST_Distance_Sphere(POINT(lng, lat), POINT(%s, %s)) as dist FROM parking_lot WHERE MBRContains(ST_GeomFromText(%s, 4326, 'axis-order=long-lat'), coord) 
-                 and (name like '%주차장%' OR space_no > 100)
+        sql = '''SELECT id, reg_id, name, lat, lng, sido, sigungu, full_address, space_no, use_yn, ST_Distance_Sphere(POINT(lng, lat), POINT(%s, %s)) as dist FROM parking_lot WHERE MBRContains(ST_GeomFromText(%s, 4326, 'axis-order=long-lat'), coord) 
+                 and use_yn = 'Y'
               '''
         polygon_str = get_mbr_polygon(min_lng, min_lat, max_lng, max_lat)
         with conn.cursor(dictionary=True) as cursor:
@@ -43,7 +39,7 @@ def get_near_parking_data(_dest: Destination):
             rows = cursor.fetchall()
             if not rows: return list()
             print(ParkingLot)
-            return [ParkingLot(row['id'], row['reg_id'], row['name'], row['lat'], row['lng'], row['sido'], row['sigungu'], row['full_address'], row['space_no'])for row in rows]
+            return [ParkingLot(row['id'], row['reg_id'], row['name'], row['lat'], row['lng'], row['sido'], row['sigungu'], row['full_address'], row['space_no'], row["dist"])for row in rows]
 
     except Exception as e:
         st.error(f"DB 연결 오류: {e}")
@@ -60,7 +56,7 @@ def get_sido_sigungu():
             select 
                   distinct sido, sigungu
                 from parking_lot
-               where name like '%주차장%'
+               where use_yn = 'Y'
               '''
         with conn.cursor(dictionary=True) as cursor:
             cursor.execute(sql)
@@ -75,6 +71,21 @@ def get_sido_sigungu():
     except Exception as e:
         st.error(f"DB 연결 오류: {e}")
         return dict()
+
+
+@st.cache_data
+def get_region_parking_data():
+    return pd.DataFrame(run_query('''
+        SELECT name, \
+               lat, \
+               lng, \
+               sido, \
+               sigungu,\
+               full_address, \
+               space_no
+          FROM parking_lot
+         WHERE use_yn = 'Y'
+    '''))
 
 def run_query(query, params=None, is_select=True):
     """
