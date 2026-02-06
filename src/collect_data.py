@@ -4,6 +4,20 @@ from db_crud import run_bulk_insert_query
 from config import config_api_key
 import time
 
+sql = '''
+    INSERT INTO parking_lot_raw (
+        reg_id, name, lat, lng, sido, sigungu, full_address, space_no, err_yn, err_msg, reg_nm
+    ) VALUES (
+        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,'API'
+    )
+'''
+
+normal_sql = """
+    INSERT INTO parking_lot (reg_id, name, lat, lng, sido, sigungu, full_address, space_no, coord)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, \
+    ST_GeomFromText(CONCAT('POINT(', %s, ' ', %s, ')'), 4326, 'axis-order=long-lat')) \
+"""
+
 def fetch_parking_api():
     '''주차장 정보 가져오기'''
 
@@ -30,45 +44,7 @@ def fetch_parking_api():
         if len(data_list) >= BATCH_SIZE:
             print(f"{len(data_list)}건 도달! DB 저장을 시작합니다.")
 
-            required = ['prk_center_id', 'prk_plce_nm', 'prk_plce_entrc_la', 'prk_plce_entrc_lo']
-
-            # 검증 함수 실행
-            validated_list = valid_check_with_logging(data_list, required)
-
-            # DB에 저장하기 좋게 가공 (튜플 형태로 변환)
-            processed_data = [
-                (data.get('prk_center_id'), data.get('prk_plce_nm'), data.get('prk_plce_entrc_la'), data.get('prk_plce_entrc_lo')
-                     , data.get('prk_plce_adres_sido') , data.get('prk_plce_adres_sigungu'), data.get('prk_plce_adres')
-                 , data.get('prk_cmprt_co'), data.get('error_yn'), data.get('error_msg'))
-                for data in validated_list
-            ]
-
-            sql = '''
-                INSERT INTO parking_lot_raw (
-                    reg_id, name, lat, lng, sido, sigungu, full_address, space_no, err_yn, err_msg, reg_nm
-                ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,'API'
-                )
-            '''
-
-            # DB 저장 함수 호출 (이미 만들어둔 bulk_insert 사용)
-            inserted_count = run_bulk_insert_query(sql, processed_data)
-
-            normal_data = [
-                (data.get('prk_center_id'), data.get('prk_plce_nm'), data.get('prk_plce_entrc_la'),
-                 data.get('prk_plce_entrc_lo')
-                     , data.get('prk_plce_adres_sido'), data.get('prk_plce_adres_sigungu'), data.get('prk_plce_adres')
-                     , data.get('prk_cmprt_co'), data.get('prk_plce_entrc_lo'),
-                 data.get('prk_plce_entrc_la'))
-                for data in validated_list if data.get('error_yn') == 'N'
-            ]
-
-            normal_sql = """
-                  INSERT INTO parking_lot (reg_id, name, lat, lng, sido, sigungu, full_address, space_no, coord)
-                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, ST_GeomFromText(CONCAT('POINT(', %s, ' ', %s, ')'), 4326, 'axis-order=long-lat'))
-                  """
-
-            inserted_normal_count = run_bulk_insert_query(normal_sql, normal_data)
+            inserted_count, inserted_normal_count = insert_batch(data_list)
 
             if inserted_count:
                 total_saved += inserted_count
@@ -79,6 +55,43 @@ def fetch_parking_api():
                 print("DB 저장 실패. 다음 루프에서 재시도합니다.")
 
         page_no += 1
+    # 2. 루프 종료 후 남은 데이터 처리
+    if data_list:
+        print(f"마지막 남은 {len(data_list)}건을 처리합니다.")
+        inserted_count, inserted_normal_count = insert_batch(data_list)
+        total_saved += (inserted_count if inserted_count else 0)
+        print(f"최종 저장 완료 (총 {total_saved}건)")
     return None
+
+def insert_batch(data_list):
+    required = ['prk_center_id', 'prk_plce_nm', 'prk_plce_entrc_la', 'prk_plce_entrc_lo']
+
+    # 검증 함수 실행
+    validated_list = valid_check_with_logging(data_list, required)
+
+    # DB에 저장하기 좋게 가공 (튜플 형태로 변환)
+    processed_data = [
+        (data.get('prk_center_id'), data.get('prk_plce_nm'), data.get('prk_plce_entrc_la'),
+         data.get('prk_plce_entrc_lo')
+             , data.get('prk_plce_adres_sido'), data.get('prk_plce_adres_sigungu'), data.get('prk_plce_adres')
+             , data.get('prk_cmprt_co'), data.get('error_yn'), data.get('error_msg'))
+        for data in validated_list
+    ]
+
+    # DB 저장 함수 호출 (이미 만들어둔 bulk_insert 사용)
+    inserted_count = run_bulk_insert_query(sql, processed_data)
+
+    normal_data = [
+        (data.get('prk_center_id'), data.get('prk_plce_nm'), data.get('prk_plce_entrc_la'),
+         data.get('prk_plce_entrc_lo')
+             , data.get('prk_plce_adres_sido'), data.get('prk_plce_adres_sigungu'), data.get('prk_plce_adres')
+             , data.get('prk_cmprt_co'), data.get('prk_plce_entrc_lo'),
+         data.get('prk_plce_entrc_la'))
+        for data in validated_list if data.get('error_yn') == 'N'
+    ]
+
+    inserted_normal_count = run_bulk_insert_query(normal_sql, normal_data)
+
+    return (inserted_count, inserted_normal_count)
 
 fetch_parking_api()

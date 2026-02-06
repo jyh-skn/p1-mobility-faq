@@ -1,6 +1,5 @@
 #streamlit main page
 import streamlit as st
-import src.utils as utils
 
 # 페이지 정의
 entry_p = st.Page("pages/01_entry_page.py", title="홈", icon="🏠", default=True)
@@ -32,6 +31,12 @@ if st.session_state.prev_page != pg.title:
 
     st.markdown("""
         <style>
+            div.st-emotion-cache-zy6yx3 {
+                padding: 3rem 1rem 10rem !important;
+            }
+            div.st-emotion-cache-1frkdi4 {
+                margin-bottom: -1.5rem !important;
+            }
             div.stButton > button p {
                 white-space: nowrap !important;
                 font-size: 14px !important;
@@ -68,3 +73,4 @@ if st.session_state.prev_page != pg.title:
     , unsafe_allow_html=True)
 
 pg.run()
+
