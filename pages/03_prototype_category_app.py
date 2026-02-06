@@ -47,20 +47,19 @@ if 'page' not in st.session_state:
 if 'region_data' not in st.session_state: # 시도/시군구 저장해둘 state 변수 - 시도를 key로, 시군구를 value 로
     st.session_state.region_data = get_sido_sigungu()
 
+df = st.session_state.search_result
 # --- 레이아웃 설정 ---
 st.set_page_config(layout="wide", page_title="Parking Mate")
 st.title("🚗 Parking Mate")
 st.write("---")
-
-df = st.session_state.search_result
-all_data = get_region_parking_data()
+st.subheader(f"🔍 검색 결과 ({len(df)}건)")
 
 # --- 상단 구현 ---
 left_col, right_col = st.columns([1, 2])
 
 # --- 왼쪽 영역: 조회 결과 리스트 ---
 with left_col:
-    st.subheader(f"🔍 검색 결과 ({len(df)}건)")
+    all_data = get_region_parking_data()
     # 1. 필터 UI (조회 결과 리스트 바로 위나 적절한 위치에 배치)
     sort_option = st.radio("", ["이름순▼", "이름순▲"], horizontal=True)
 
@@ -99,7 +98,7 @@ with left_col:
 
 # --- 오른쪽 영역: 지도 ---
 with right_col:
-    with st.container():
+    with st.container(border=True):
         col1, col2, col3 = st.columns([0.45, 0.45, 0.1])
 
         with col1:
