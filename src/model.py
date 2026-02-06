@@ -112,5 +112,5 @@ class GasStation:
         def distance(self):
             return self.__distance
 
-        def __repr__(self):
-            return f'GasStation(reg_id = "{self.__reg_id}", station_name = "{self.__station_name}", price = "{self.__price}", brand_name = "{self.__brand_name}", lat = "{self.__lat}", lng = "{self.__lng}", distance = {self.__distance})'
+    def __repr__(self):
+        return f'GasStation(reg_id = "{self.__reg_id}", station_name = "{self.__station_name}", price = "{self.__price}", brand_name = "{self.__brand_name}", lat = "{self.__lat}", lng = "{self.__lng}", distance = {self.__distance})'
