@@ -2,12 +2,6 @@ import streamlit as st
 from streamlit_folium import st_folium
 import folium
 import math
-# import os
-# import requests
-# from pyproj import Transformer
-# from geopy.geocoders import Nominatim
-# from dotenv import load_dotenv
-
 from folium.plugins import MarkerCluster
 
 from src.utils import get_oil_stations, find_address_and_point
@@ -43,6 +37,11 @@ with left_col:
     if stations:
         total_items = len(stations)
         total_pages = math.ceil(total_items / ITEMS_PER_PAGE)
+
+        current_group = (st.session_state.current_page - 1) // 5
+        start_page = current_group * 5 + 1
+        end_page = min(start_page + 4, total_pages)
+
         start_idx = (st.session_state.current_page - 1) * ITEMS_PER_PAGE
         end_idx = start_idx + ITEMS_PER_PAGE
         page_data = stations[start_idx:end_idx]
@@ -79,6 +78,28 @@ with left_col:
             if st.button("다음 ➡️", use_container_width=True, disabled=is_last):
                 st.session_state.current_page += 1
                 st.rerun()
+
+        st.write("---")
+        page_cols = st.columns([1.1, 1, 1, 1, 1, 1, 1.5])
+
+        with page_cols[0]:
+            if current_group > 0:
+                if st.button("◀", key="prev_group"):
+                    st.session_state.current_page = start_page - 1
+                    st.rerun()
+
+        for i, p in enumerate(range(start_page, end_page + 1)):
+            with page_cols[i + 1]:
+                btn_type = "primary" if st.session_state.current_page == p else "secondary"
+                if st.button(str(p), key=f"p_{p}", type=btn_type, use_container_width=True):
+                    st.session_state.current_page = p
+                    st.rerun()
+
+        with page_cols[6]:
+            if end_page < total_pages:
+                if st.button("▶", key="next_group"):
+                    st.session_state.current_page = end_page + 1
+                    st.rerun()
     else:
         st.info("오른쪽 검색창에서 동네 이름이나 주소를 검색해 보세요!")
 

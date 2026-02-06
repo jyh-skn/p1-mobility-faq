@@ -1,5 +1,6 @@
 #streamlit main page
 import streamlit as st
+import src.utils as utils
 
 # 페이지 정의
 entry_p = st.Page("pages/01_entry_page.py", title="홈", icon="🏠", default=True)
@@ -28,5 +29,42 @@ if st.session_state.prev_page != pg.title:
     for key in list(st.session_state.keys()):
         if key not in keep_keys:
             del st.session_state[key]
+
+    st.markdown("""
+        <style>
+            div.stButton > button p {
+                white-space: nowrap !important;
+                font-size: 14px !important;
+            }
+            div.stButton > button {
+                min-width: 35px !important;
+                width: 100% !important;
+                padding: 0px !important;
+                margin: 0px 2px !important;
+            }
+            [data-testid="column"] {
+                padding-left: 1px !important;
+                padding-right: 1px !important;
+            }
+            
+            /* 2. 지도를 감싸는 가장 바깥쪽 리테이너 타겟팅 */
+            [data-testid="stVerticalBlock"] > div:has(iframe) {
+                margin-top: -2px !important; /
+            }
+            
+            /* 3. 지도 자체 프레임 조절 */
+            iframe {
+                border-radius: 15px !important;
+                border: 1px solid #ddd !important;
+                margin-top: -5px !important; /* 내부에서 한 번 더 올림 */
+            }
+            
+            /* 4. st_folium 컨테이너 내부 여백 제거 */
+            .element-container:has(iframe) {
+                margin-bottom: -10px !important;
+            }
+        </style>
+        """
+    , unsafe_allow_html=True)
 
 pg.run()

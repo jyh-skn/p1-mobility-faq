@@ -1,112 +1,84 @@
-import requests
-# mysql-connector
-import mysql.connector
-from dotenv import load_dotenv
-import os
-import json
+from utils import fetch_from_api    # api 호출하는 함수
+from utils import valid_check_with_logging    # api 호출하는 함수
+from db_crud import run_bulk_insert_query
+from config import config_api_key
+import time
 
-from model import ParkingLot
+def fetch_parking_api():
+    '''주차장 정보 가져오기'''
 
-load_dotenv()
+    BASE_URL = 'https://apis.data.go.kr/B553881/Parking/PrkSttusInfo'   # api url 정보
+    data_list = []      # api를 받는 data 리스트
+    page_no = 1         # page no
+    total_saved = 0     # 전체 저장된 개수 카운트
+    BATCH_SIZE = 4000   # 만 건 단위로 끊기
 
-API_KEY = os.getenv("API_KEY")
-DB_CONFIG = json.loads(os.getenv("DB_CONFIG"))
+    while True:
+        numOfRows = 2000    # 한번에 받는 데이터의 수
+        items = fetch_from_api( # fetch_from_api(api 공통함수 호출)
+            BASE_URL,
+            {'serviceKey': config_api_key,'pageNo':page_no,'numOfRows':numOfRows, 'format':2}
+        ).get("PrkSttusInfo", [])
 
-BASE_URL = 'https://apis.data.go.kr/B553881/Parking/PrkSttusInfo'
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    'Accept': 'application/json, text/javascript, */*; q=0.01'
-}
+        if not items: # 더이상 데이터가 없으면 중단
+            break
 
-# for pageno in range(1, PAGE_NO):
-params = {'serviceKey':API_KEY, 'pageNo':1,'numOfRows':2000, 'format':2}
-response = requests.get(url=BASE_URL, params=params, headers=headers)
+        data_list.extend(items)
+        print(f"{page_no}페이지 완료 (누적: {len(data_list)}건)")
 
-parking_lots_list: list[ParkingLot] = []
-if response.status_code == 200:
-    parking_lots = response.json()["PrkSttusInfo"] #주차장 리스트
-    # print(parking_lots)
-    # print(len(parking_lots))
+        # list가 설정한 Batch size보다 커지면 DB에 저장
+        if len(data_list) >= BATCH_SIZE:
+            print(f"{len(data_list)}건 도달! DB 저장을 시작합니다.")
 
-    if len(parking_lots) > 0:
-        for parking_lot in parking_lots:
-            if parking_lot['prk_plce_entrc_la'] and parking_lot['prk_plce_entrc_lo']:
-                parking_lots_list.append(ParkingLot(None, parking_lot['prk_center_id'], parking_lot['prk_plce_nm'], parking_lot['prk_plce_entrc_la'], parking_lot['prk_plce_entrc_lo'], parking_lot['prk_plce_adres_sido'], parking_lot['prk_plce_adres_sigungu'], parking_lot['prk_plce_adres'], parking_lot['prk_cmprt_co']))
+            required = ['prk_center_id', 'prk_plce_nm', 'prk_plce_entrc_la', 'prk_plce_entrc_lo']
 
-else:
-    print('PROBLEM', response.status_code, response.text)
-print(parking_lots_list)
+            # 검증 함수 실행
+            validated_list = valid_check_with_logging(data_list, required)
 
-if len(parking_lots_list) > 0:
-    try:
-        with mysql.connector.connect(**DB_CONFIG) as conn:
-            with conn.cursor() as cursor:
-                for parking_lot in parking_lots_list:
-                    cursor.execute("""
-                        insert
-                          into parking_lot (id
-                                          , reg_id
-                                          , name
-                                          , lat
-                                          , lng
-                                          , sido
-                                          , sigungu
-                                          , full_address
-                                          , space_no
-                                          , coord
-                                        )
-                        values ( %s
-                               , %s
-                               , %s
-                               , %s
-                               , %s
-                               , %s
-                               , %s
-                               , %s
-                               , %s
-                               , ST_GeomFromText(concat('POINT(', %s, ' ', %s, ')'), 4326, 'axis-order=long-lat')
-                               )
-                    """, (None ,parking_lot.reg_id, parking_lot.name, parking_lot.lat, parking_lot.lng, parking_lot.sido, parking_lot.sigungu, parking_lot.full_addr, parking_lot.space_no, parking_lot.lng, parking_lot.lat))
-                conn.commit()
+            # DB에 저장하기 좋게 가공 (튜플 형태로 변환)
+            processed_data = [
+                (data.get('prk_center_id'), data.get('prk_plce_nm'), data.get('prk_plce_entrc_la'), data.get('prk_plce_entrc_lo')
+                     , data.get('prk_plce_adres_sido') , data.get('prk_plce_adres_sigungu'), data.get('prk_plce_adres')
+                 , data.get('prk_cmprt_co'), data.get('error_yn'), data.get('error_msg'))
+                for data in validated_list
+            ]
 
-    except mysql.connector.Error as err:
-        print('DB에러: ', err)
+            sql = '''
+                INSERT INTO parking_lot_raw (
+                    reg_id, name, lat, lng, sido, sigungu, full_address, space_no, err_yn, err_msg, reg_nm
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,'API'
+                )
+            '''
 
-# executemany 참고 코드
-"""
-if len(parking_lots_list) > 0:
-    try:
-        with mysql.connector.connect(**config) as conn:
-            with conn.cursor() as cursor:
+            # DB 저장 함수 호출 (이미 만들어둔 bulk_insert 사용)
+            inserted_count = run_bulk_insert_query(sql, processed_data)
 
-                # %s 순서: reg_id, name, lat, lng, sido, sigungu, addr, space, lng, lat
-                sql = '''
-                    INSERT INTO parkinglot (
-                        reg_id, name, lat, lng, sido, sigungu, full_address, space_no, coord
-                    ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, 
-                        ST_GeomFromText(CONCAT('POINT(', %s, ' ', %s, ')'), 4326, 'axis-order=long-lat')
-                    )
-                '''
+            normal_data = [
+                (data.get('prk_center_id'), data.get('prk_plce_nm'), data.get('prk_plce_entrc_la'),
+                 data.get('prk_plce_entrc_lo')
+                     , data.get('prk_plce_adres_sido'), data.get('prk_plce_adres_sigungu'), data.get('prk_plce_adres')
+                     , data.get('prk_cmprt_co'), data.get('prk_plce_entrc_lo'),
+                 data.get('prk_plce_entrc_la'))
+                for data in validated_list if data.get('error_yn') == 'N'
+            ]
 
-                # 2. 데이터 리스트 빌드 (List of Tuples)
-                data_list = [
-                    (
-                        p.reg_id, p.name, p.lat, p.lng, p.sido, p.sigungu, p.full_addr, p.space_no,
-                        p.lng, # POINT 경도
-                        p.lat  # POINT 위도
-                    ) for p in parking_lots_list
-                ]
+            normal_sql = """
+                  INSERT INTO parking_lot (reg_id, name, lat, lng, sido, sigungu, full_address, space_no, coord)
+                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, ST_GeomFromText(CONCAT('POINT(', %s, ' ', %s, ')'), 4326, 'axis-order=long-lat'))
+                  """
 
-                # 3. 일괄 삽입 실행
-                cursor.executemany(sql, data_list)
-                
-                conn.commit()
-                print(f"총 {cursor.rowcount}개의 데이터가 성공적으로 삽입되었습니다.")
+            inserted_normal_count = run_bulk_insert_query(normal_sql, normal_data)
 
-    except mysql.connector.Error as err:
-        print('DB에러: ', err)
+            if inserted_count:
+                total_saved += inserted_count
+                print(f"DB 저장 완료! (누적 저장: {total_saved}건)")
+                # 🔥 2. 저장 성공 후 리스트 비우기
+                data_list = []
+            else:
+                print("DB 저장 실패. 다음 루프에서 재시도합니다.")
 
-"""
+        page_no += 1
+    return None
 
-#
+fetch_parking_api()
