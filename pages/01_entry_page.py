@@ -43,7 +43,7 @@ def render_entry():
     st.write("---")
 
     # 3. 서비스 카드 섹션
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         # HTML 카드 시뮬레이션
@@ -69,7 +69,20 @@ def render_entry():
         if st.button("주유소 찾아보기", key="btn_gas", use_container_width=True):
             st.switch_page("pages/04_search_gas_station.py")
 
+    with col3:
+        st.markdown("""
+                    <div class="service-card">
+                        <div class="icon-text">🔍</div>
+                        <div class="title-text">통합 서비스</div>
+                        <div class="desc-text">주차장과 주유소의 서비스를 함께 확인하세요.</div>
+                    </div>
+                """, unsafe_allow_html=True)
+        if st.button("통합 찾아보기", key="btn_parking_gas", use_container_width=True):
+            st.switch_page("pages/05_search_parking_gas.py")
+
     # 4. 하단 통계 요약 (AI 백엔드 느낌 강조)
 
 if __name__ == "__main__":
     render_entry()
+
+    st.spinner('데이터를 불러오는 중...')
