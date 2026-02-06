@@ -72,8 +72,8 @@ with left_col:
         # --------------------------------------------------------
 
         # 2. 페이지네이션 설정
-        items_per_page = 5
-        total_pages = min(math.ceil(len(df) / items_per_page), 5)
+        items_per_page = 4
+        total_pages = min(math.ceil(len(df) / items_per_page), 4)
         start_idx = (st.session_state.page - 1) * items_per_page
         end_idx = start_idx + items_per_page
         df_page = df.iloc[start_idx:end_idx]
@@ -131,11 +131,22 @@ with right_col:
                 )
 
         with col3:
+
             search_btn = st.button("검색", use_container_width=True)
-            if st.session_state.sido_name and st.session_state.sgg_name and search_btn:  # 시도명, 시군구명, 버튼 클릭이 모두 충족되는 경우
-                st.session_state.search_result = data_sd[
-                    data_sd['sigungu'] == st.session_state.sgg_name]  # 결과 값에 시군구명까지 필터링한 데이터 저장
-            #        print(st.session_state.search_result)
+            if search_btn:
+                if st.session_state.sido_name and st.session_state.sgg_name:
+                    # 필터링 로직: all_data에서 직접 필터링하여 안전하게 데이터를 가져옵니다.
+                    res = all_data[
+                        (all_data['sido'] == st.session_state.sido_name) &
+                        (all_data['sigungu'] == st.session_state.sgg_name)
+                        ]
+                    st.session_state.search_result = res
+                    st.session_state.page = 1  # 검색 시 리스트 페이지 초기화
+
+                    # ⭐ 핵심: 데이터를 세션에 넣은 후 즉시 리런!
+                    st.rerun()
+                else:
+                    st.warning("지역을 선택해주세요.")
 
     # 지도 표시
     center_lat, center_lng = (df.iloc[0]['lat'], df.iloc[0]['lng']) if not df.empty else (37.5665, 126.9780)
