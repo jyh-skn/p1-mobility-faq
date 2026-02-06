@@ -3,6 +3,8 @@
 import os
 import json
 from dotenv import load_dotenv
+import sys
+from pathlib import Path
 
 load_dotenv()
 
@@ -14,4 +16,6 @@ class Config:
 config_db = Config.DB
 config_api_key = Config.API_KEY
 config_opinet = Config.OPINET
+# root directory
+config_base_dir = Path(__file__).resolve().parent.parent
 
