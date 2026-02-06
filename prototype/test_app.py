@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 warnings.filterwarnings('ignore', category=UserWarning)
 
 # 1. 환경 설정 로드
-load_dotenv('env')
+load_dotenv()
 geolocator = Nominatim(user_agent="parking_mate")
 
 db_config_raw = os.getenv("DB_CONFIG")
@@ -143,7 +143,7 @@ with left_col:
         st.write("---")
 
         # [3] 화살표 + 숫자 5개 버튼 UI (겹침 방지 비율 적용)
-        page_cols = st.columns([1.5, 1, 1, 1, 1, 1, 1.5])
+        page_cols = st.columns([1.1, 1, 1, 1, 1, 1, 1.5])
 
         with page_cols[0]:
             if current_group > 0:
